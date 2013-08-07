@@ -36,4 +36,69 @@ class User < ActiveRecord::Base
     User.new(result_hash)
   end
 
+  def sync_followers
+    url = Addressable::URI.new(
+    :scheme => "https",
+    :host   => "api.twitter.com",
+    :path   => "1.1/followers/ids.json",
+    :query_values => {"user_id" => self.twitter_user_id}
+    )
+    result = JSON.parse(TwitterSession.get(url.to_s))
+    result['ids'].each do |id|
+      Follow.create!(:user_id => self.twitter_user_id, :follower_id => id)
+    end
+     create_users_from_ids(result['ids'])
+  end
+
+  def sync_followed_users
+    url = Addressable::URI.new(
+    :scheme => "https",
+    :host   => "api.twitter.com",
+    :path   => "1.1/friends/ids.json",
+    :query_values => {"user_id" => self.twitter_user_id}
+    )
+    result = JSON.parse(TwitterSession.get(url.to_s))
+    result['ids'].each do |id|
+      Follow.create!(:user_id => id, :follower_id => self.twitter_user_id)
+    end
+    create_users_from_ids(result['ids'])
+  end
+
+  def sync_statuses
+    url = Addressable::URI.new(
+    :scheme => "https",
+    :host   => "api.twitter.com",
+    :path   => "1.1/statuses/user_timeline.json",
+    :query_values => {"user_id" => self.twitter_user_id}
+    )
+    results = JSON.parse(TwitterSession.get(url.to_s))
+    results.each do |result|
+      unless Status.find_by_twitter_status_id(result['id'])
+        new_status = Status.create!(:body => result['text'],
+        :twitter_status_id => result['id'], :user_id => result['user']['id'])
+        new_status.save!
+      end
+    end
+  end
+
+protected
+
+  def create_users_from_ids(array_of_user_ids)
+    #maybe redo this in the future
+    url = Addressable::URI.new(
+    :scheme => "https",
+    :host   => "api.twitter.com",
+    :path   => "1.1/users/lookup.json",
+    :query_values => {"user_id" => array_of_user_ids * ",",
+      "include_entities" => "false"}
+    )
+
+    results = JSON.parse(TwitterSession.get(url.to_s))
+    results.each do |result|
+      unless User.find(result['id'])
+      User.create!(:username => result['screen_name'],
+       :twitter_user_id => result['id'])
+     end
+    end
+  end
 end

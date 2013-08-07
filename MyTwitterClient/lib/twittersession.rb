@@ -47,11 +47,11 @@ class TwitterSession
     @current_user ||= set_user
   end
 
-  def get(uri)
-    access_token.get(uri).body
+  def self.get(uri)
+    self.instance.access_token.get(uri).body
   end
 
-  def post(uri)
-    access_token.post(uri).body
+  def self.post(uri)
+    self.instance.access_token.post(uri).body
   end
 end
