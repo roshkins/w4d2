@@ -1,6 +1,8 @@
 class TwitterSession
   include Singleton
 
+  #I know this is wrong to put in the public but here are my consumer keys anyways.
+
   CONSUMER_KEY = 'auJ8l7unaSfzIRN1QpHNA'
   CONSUMER_SECRET = 'xHWQQT0DQvaisOsVJIODH2G4Xi6wOUpsuQ3FTWrm6lI'
   CONSUMER = OAuth::Consumer.new(CONSUMER_KEY, CONSUMER_SECRET,
